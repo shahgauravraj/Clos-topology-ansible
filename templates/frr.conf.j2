@@ -1,0 +1,73 @@
+frr version 7.2.1
+frr defaults traditional
+hostname {{ ansible_hostname }}
+log syslog informational
+{% if group_names[0] == "servers" %}
+no ip forwarding
+{% endif%}
+no ipv6 forwarding
+service integrated-vtysh-config
+!
+router bgp {{ asn }}
+ bgp router-id {{ lo_ip }}
+ bgp log-neighbor-changes
+ no bgp default ipv4-unicast
+{% if group_names[0] == "spines" %}
+ bgp bestpath as-path multipath-relax
+{% endif %}
+ timers bgp 3 9
+{% if group_names[0] == "spines" %}
+ neighbor ISL peer-group
+ neighbor ISL advertisement-interval 0
+ neighbor ISL timers connect 5
+ neighbor enp0s10 interface peer-group ISL
+ neighbor enp0s10 remote-as {{ remote_as[0] }}
+ neighbor enp0s12 interface peer-group ISL
+ neighbor enp0s12 remote-as {{ remote_as[0] }}
+ neighbor enp0s13 interface peer-group ISL
+ neighbor enp0s13 remote-as {{ remote_as[1] }}
+ neighbor enp0s14 interface peer-group ISL
+ neighbor enp0s14 remote-as {{ remote_as[1] }}
+{% elif group_names[0] == "servers" %}
+ neighbor HT peer-group
+ neighbor HT remote-as {{ remote_as }}
+ neighbor HT advertisement-interval 0
+ neighbor HT timers connect 5
+ neighbor enp0s10 interface peer-group HT
+ neighbor enp0s12 interface peer-group HT
+{% else %}
+ neighbor HT peer-group
+ neighbor HT advertisement-interval 0
+ neighbor HT timers connect 5
+ neighbor ISL peer-group
+ neighbor ISL remote-as {{ remote_as[0] }}
+ neighbor ISL advertisement-interval 0
+ neighbor ISL timers connect 5
+ neighbor enp0s10 interface peer-group HT
+ neighbor enp0s10 remote-as {{ remote_as[1] }}
+ neighbor enp0s12 interface peer-group HT
+ neighbor enp0s12 remote-as {{ remote_as[2] }}
+ neighbor enp0s13 interface peer-group ISL
+ neighbor enp0s14 interface peer-group ISL
+{% endif %}
+ !
+ address-family ipv4 unicast
+  network {{ lo_ip }}/32
+{% for ip_addr in ip_ranges %}
+  network {{ ip_addr }}/30
+{% endfor %}
+{% if group_names[0] == "spines" %}
+  neighbor ISL activate
+  maximum-paths 64
+{% elif group_names[0] == "servers" %}
+  neighbor HT activate
+  maximum-paths 2
+{% else %}
+  neighbor HT activate
+  neighbor ISL activate
+  maximum-paths 64
+{% endif %}
+ exit-address-family
+!
+line vty
+!

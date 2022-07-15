@@ -1,0 +1,27 @@
+# This is the network config generated using ansible
+network:
+  ethernets:
+    enp0s10:
+      dhcp4: false
+      addresses: [{{ int_ip_addr[0] }}]
+    enp0s12:
+      dhcp4: false
+      addresses: [{{ int_ip_addr[1] }}]
+{% if group_names[0] == "servers" %}
+    enp0s13:
+      dhcp4: true
+{% else %}
+    enp0s13:
+      dhcp4: false
+      addresses: [{{ int_ip_addr[2] }}]
+    enp0s14:
+      dhcp4: false
+      addresses: [{{ int_ip_addr[3] }}]
+    enp0s15:
+      dhcp4: true
+{% endif %}
+    lo:
+      match:
+        name: lo
+      addresses: [{{ lo_ip }}/32]
+  version: 2

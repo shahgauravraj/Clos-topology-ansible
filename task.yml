@@ -1,0 +1,30 @@
+---
+# tasks file to generate frr configuration files
+- hosts: spines leaves servers
+  tasks:
+  # - name: Generate and copy netplan configuration files to remote machines.
+  #   template:
+  #     src: "netplan.yaml.j2"
+  #     dest: /etc/netplan/00-installer-config.yaml
+  #     owner: root
+  #     group: root
+  #     mode: 0644
+  # - name: Apply netplan configuration change.
+  #   command: sudo netplan apply
+  #   async: 45
+  #   poll: 0
+  - name: Generate and copy frr configuration files to remote machines.
+    template:
+      src: "frr.conf.j2"
+      dest: /etc/frr/frr.conf
+      owner: frr
+      group: frr
+      mode: 0640
+  - name: Restart frr.service on each machine.
+    ansible.builtin.systemd:
+      state: restarted
+      daemon_reload: yes
+      name: frr
+  become: yes
+  vars:
+    ansible_become_pass: 123
